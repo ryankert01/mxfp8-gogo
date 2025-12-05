@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <thread>
+#include <stdexcept>
 
 #ifdef __x86_64__
 #include <immintrin.h>
@@ -25,6 +26,7 @@ namespace mxfp8 {
 
 // Cache line size for alignment
 constexpr size_t TILE_SIZE = 32; // Tile size for cache blocking
+constexpr size_t DEFAULT_THREAD_COUNT = 4; // Default number of threads when hardware_concurrency fails
 
 /**
  * Thread arguments for parallel matrix multiplication
@@ -114,7 +116,7 @@ inline std::vector<float> matmul_parallel_float(const std::vector<float>& A,
     // Auto-detect number of threads
     if (num_threads == 0) {
         num_threads = std::thread::hardware_concurrency();
-        if (num_threads == 0) num_threads = 4;
+        if (num_threads == 0) num_threads = DEFAULT_THREAD_COUNT;
     }
     
     // Limit threads to number of rows
@@ -144,7 +146,14 @@ inline std::vector<float> matmul_parallel_float(const std::vector<float>& A,
         args[t].row_start = row_start;
         args[t].row_end = row_start + rows;
         
-        pthread_create(&threads[t], nullptr, matmul_worker, &args[t]);
+        int rc = pthread_create(&threads[t], nullptr, matmul_worker, &args[t]);
+        if (rc != 0) {
+            // Wait for already created threads and throw error
+            for (size_t i = 0; i < t; ++i) {
+                pthread_join(threads[i], nullptr);
+            }
+            throw std::runtime_error("Failed to create thread");
+        }
         row_start += rows;
     }
     

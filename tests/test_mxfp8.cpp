@@ -18,6 +18,8 @@ using namespace mxfp8;
 
 // Tolerance for floating point comparison (MXFP8 has limited precision)
 constexpr float TOLERANCE = 0.15f;
+constexpr float FP8_RELATIVE_ERROR_TOLERANCE = 0.3f;  // 30% relative error for FP8 conversions
+constexpr float MATMUL_RELATIVE_ERROR_TOLERANCE = 0.5f;  // 50% relative error for matmul due to quantization
 
 /**
  * Test FP8_E4M3 conversion
@@ -38,7 +40,7 @@ void test_fp8_conversion() {
             FP8_E4M3 fp8 = FP8_E4M3::from_float(val);
             float recovered = fp8.to_float();
             float rel_err = std::abs(recovered - val) / std::max(std::abs(val), 1e-6f);
-            assert(rel_err < 0.3f); // Allow 30% error due to low precision
+            assert(rel_err < FP8_RELATIVE_ERROR_TOLERANCE);
         }
     }
     
@@ -76,7 +78,7 @@ void test_mxfp8_matrix() {
     for (size_t i = 0; i < data.size(); ++i) {
         float err = std::abs(recovered[i] - data[i]);
         float rel_err = err / std::max(std::abs(data[i]), 1e-6f);
-        assert(rel_err < 0.3f || err < 0.5f);
+        assert(rel_err < FP8_RELATIVE_ERROR_TOLERANCE || err < MATMUL_RELATIVE_ERROR_TOLERANCE);
     }
     
     std::cout << "  PASSED" << std::endl;
@@ -118,7 +120,7 @@ void test_sequential_matmul() {
     
     float rel_err = max_err / std::max(max_ref, 1e-6f);
     std::cout << "  Max relative error: " << rel_err << std::endl;
-    assert(rel_err < 0.5f); // Allow 50% relative error due to MXFP8 quantization
+    assert(rel_err < MATMUL_RELATIVE_ERROR_TOLERANCE);
     
     std::cout << "  PASSED" << std::endl;
 }
