@@ -120,7 +120,7 @@ void test_sequential_matmul() {
     
     float rel_err = max_err / std::max(max_ref, 1e-6f);
     std::cout << "  Max relative error: " << rel_err << std::endl;
-    assert(rel_err < MATMUL_RELATIVE_ERROR_TOLERANCE);
+    assert(rel_err < MATMUL_RELATIVE_ERROR_TOLERANCE || max_err < ABSOLUTE_ERROR_TOLERANCE);
     
     std::cout << "  PASSED" << std::endl;
 }

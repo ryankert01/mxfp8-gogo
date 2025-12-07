@@ -26,7 +26,7 @@ constexpr size_t BLOCK_SIZE = 32;
 
 /**
  * E4M3 format: 1 sign + 4 exponent + 3 mantissa
- * Range: approximately ±448
+ * Range: approximately ±240
  * Special values: NaN (S.1111.111)
  */
 struct FP8_E4M3 {
@@ -58,15 +58,16 @@ struct FP8_E4M3 {
         
         // Clamp to representable range
         if (fp8_exp >= 15) {
-            // Max representable value (avoid NaN encoding 0x7F/0xFF)
-            return FP8_E4M3((sign << 7) | 0x7E);
+            // Max representable value (exp=14, mant=7 = 0x77)
+            return FP8_E4M3((sign << 7) | 0x77);
         }
         if (fp8_exp <= 0) {
             // Handle subnormal numbers
             // For E4M3, subnormal range is when fp8_exp <= 0
             // Compute the shift needed to represent as subnormal
             int32_t shift = 1 - fp8_exp; // How many positions to shift right
-            if (shift > 3) {
+            // Allow one extra bit position for proper rounding to smallest subnormal
+            if (shift > 4) {
                 return FP8_E4M3(sign << 7); // Too small, flush to zero
             }
             // Add implicit leading 1 bit for normalized float
@@ -91,7 +92,7 @@ struct FP8_E4M3 {
             rounded_mant = 0;
             // Check if exponent overflowed
             if (fp8_exp >= 15) {
-                return FP8_E4M3((sign << 7) | 0x7E); // Max value
+                return FP8_E4M3((sign << 7) | 0x77); // Max value
             }
         }
         

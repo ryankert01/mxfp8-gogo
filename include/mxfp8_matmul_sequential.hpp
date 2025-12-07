@@ -15,20 +15,21 @@
 namespace mxfp8 {
 
 /**
- * Reference float matrix multiplication for verification
+ * Reference float matrix multiplication
+ * Uses cache-friendly i,k,j loop order to avoid striding through B matrix
  */
 inline std::vector<float> matmul_reference(const std::vector<float>& A, 
                                            const std::vector<float>& B,
                                            size_t M, size_t K, size_t N) {
     std::vector<float> C(M * N, 0.0f);
     
+    // i,k,j loop order for better cache utilization
     for (size_t i = 0; i < M; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            float sum = 0.0f;
-            for (size_t k = 0; k < K; ++k) {
-                sum += A[i * K + k] * B[k * N + j];
+        for (size_t k = 0; k < K; ++k) {
+            const float a_val = A[i * K + k];
+            for (size_t j = 0; j < N; ++j) {
+                C[i * N + j] += a_val * B[k * N + j];
             }
-            C[i * N + j] = sum;
         }
     }
     
