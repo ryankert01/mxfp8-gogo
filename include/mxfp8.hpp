@@ -62,11 +62,40 @@ struct FP8_E4M3 {
             return FP8_E4M3((sign << 7) | 0x7E);
         }
         if (fp8_exp <= 0) {
-            return FP8_E4M3(sign << 7); // Subnormal -> zero
+            // Handle subnormal numbers
+            // For E4M3, subnormal range is when fp8_exp <= 0
+            // Compute the shift needed to represent as subnormal
+            int32_t shift = 1 - fp8_exp; // How many positions to shift right
+            if (shift > 3) {
+                return FP8_E4M3(sign << 7); // Too small, flush to zero
+            }
+            // Add implicit leading 1 bit for normalized float
+            uint32_t full_mant = mant | 0x800000; // 24-bit mantissa with leading 1
+            // Shift right to get subnormal mantissa (need 3 bits)
+            uint32_t subnormal_mant = full_mant >> (20 + shift);
+            // Round to nearest
+            uint32_t round_bit = (full_mant >> (19 + shift)) & 1;
+            subnormal_mant += round_bit;
+            if (subnormal_mant > 7) subnormal_mant = 7; // Clamp
+            return FP8_E4M3((sign << 7) | (subnormal_mant & 0x7));
         }
         
-        // Round mantissa from 23 bits to 3 bits
-        uint8_t fp8_mant = (mant >> 20) & 0x7;
+        // Round mantissa from 23 bits to 3 bits (round-to-nearest)
+        uint32_t round_bit = (mant >> 19) & 1; // The bit just below the 3 MSBs
+        uint32_t rounded_mant = (mant >> 20) + round_bit;
+        
+        // Handle mantissa overflow from rounding
+        if (rounded_mant > 7) {
+            // Carry to exponent
+            fp8_exp += 1;
+            rounded_mant = 0;
+            // Check if exponent overflowed
+            if (fp8_exp >= 15) {
+                return FP8_E4M3((sign << 7) | 0x7E); // Max value
+            }
+        }
+        
+        uint8_t fp8_mant = rounded_mant & 0x7;
         
         return FP8_E4M3((sign << 7) | (fp8_exp << 3) | fp8_mant);
     }

@@ -24,8 +24,8 @@
 
 namespace mxfp8 {
 
-// Cache line size for alignment
-constexpr size_t TILE_SIZE = 32; // Tile size for cache blocking
+// Tile size for cache blocking
+constexpr size_t TILE_SIZE = 32;
 constexpr size_t DEFAULT_THREAD_COUNT = 4; // Default number of threads when hardware_concurrency fails
 
 /**

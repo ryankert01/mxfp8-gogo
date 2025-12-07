@@ -15,77 +15,6 @@
 namespace mxfp8 {
 
 /**
- * Sequential matrix multiplication for MXFP8 matrices
- * 
- * @param A Input matrix A (M x K)
- * @param B Input matrix B (K x N)
- * @return Result matrix C (M x N)
- */
-inline MxfpMatrix matmul_sequential(const MxfpMatrix& A, const MxfpMatrix& B) {
-    if (A.cols != B.rows) {
-        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
-    }
-    
-    size_t M = A.rows;
-    size_t K = A.cols;
-    size_t N = B.cols;
-    
-    // First compute result in float, then convert to MXFP8
-    std::vector<float> result_float(M * N, 0.0f);
-    
-    // Classic O(M*N*K) matrix multiplication
-    for (size_t i = 0; i < M; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            float sum = 0.0f;
-            for (size_t k = 0; k < K; ++k) {
-                // Get values with scaling applied
-                float a_val = A.get(i, k);
-                float b_val = B.get(k, j);
-                sum += a_val * b_val;
-            }
-            result_float[i * N + j] = sum;
-        }
-    }
-    
-    // Convert result to MXFP8
-    return MxfpMatrix::from_float(result_float, M, N);
-}
-
-/**
- * Sequential matrix multiplication returning float result
- * (for verification purposes)
- * 
- * @param A Input matrix A (M x K)
- * @param B Input matrix B (K x N)
- * @return Result as float vector (M x N)
- */
-inline std::vector<float> matmul_sequential_float(const MxfpMatrix& A, const MxfpMatrix& B) {
-    if (A.cols != B.rows) {
-        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
-    }
-    
-    size_t M = A.rows;
-    size_t K = A.cols;
-    size_t N = B.cols;
-    
-    std::vector<float> result(M * N, 0.0f);
-    
-    for (size_t i = 0; i < M; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            float sum = 0.0f;
-            for (size_t k = 0; k < K; ++k) {
-                float a_val = A.get(i, k);
-                float b_val = B.get(k, j);
-                sum += a_val * b_val;
-            }
-            result[i * N + j] = sum;
-        }
-    }
-    
-    return result;
-}
-
-/**
  * Reference float matrix multiplication for verification
  */
 inline std::vector<float> matmul_reference(const std::vector<float>& A, 
@@ -104,6 +33,45 @@ inline std::vector<float> matmul_reference(const std::vector<float>& A,
     }
     
     return C;
+}
+
+/**
+ * Sequential matrix multiplication returning float result
+ * (for verification purposes)
+ * 
+ * @param A Input matrix A (M x K)
+ * @param B Input matrix B (K x N)
+ * @return Result as float vector (M x N)
+ */
+inline std::vector<float> matmul_sequential_float(const MxfpMatrix& A, const MxfpMatrix& B) {
+    if (A.cols != B.rows) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+    
+    // Convert to float first for efficiency
+    std::vector<float> A_float = A.to_float();
+    std::vector<float> B_float = B.to_float();
+    
+    return matmul_reference(A_float, B_float, A.rows, A.cols, B.cols);
+}
+
+/**
+ * Sequential matrix multiplication for MXFP8 matrices
+ * 
+ * @param A Input matrix A (M x K)
+ * @param B Input matrix B (K x N)
+ * @return Result matrix C (M x N)
+ */
+inline MxfpMatrix matmul_sequential(const MxfpMatrix& A, const MxfpMatrix& B) {
+    if (A.cols != B.rows) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+    
+    // Perform sequential multiplication on float representations
+    std::vector<float> result_float = matmul_sequential_float(A, B);
+    
+    // Convert result to MXFP8
+    return MxfpMatrix::from_float(result_float, A.rows, B.cols);
 }
 
 } // namespace mxfp8

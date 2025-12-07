@@ -83,20 +83,20 @@ Tested on 4-core system:
 
 | Matrix Size | Sequential | Parallel (4 threads) | Speedup |
 |-------------|------------|---------------------|---------|
-| 128×128     | 6.70 ms    | 0.32 ms            | 20.75× |
-| 256×256     | 53.84 ms   | 1.82 ms            | 29.62× |
-| 512×512     | 433.66 ms  | 11.30 ms           | 38.39× |
-| 1024×1024   | 3513.75 ms | 93.02 ms           | 37.77× |
+| 128×128     | 2.78 ms    | 0.33 ms            | 8.34× |
+| 256×256     | 23.59 ms   | 1.86 ms            | 12.69× |
+| 512×512     | 361.60 ms  | 11.72 ms           | 30.85× |
+| 1024×1024   | 6773.63 ms | 94.12 ms           | 71.97× |
 
 ### Performance Analysis
 
-- **Sequential**: ~0.62 GFLOPS
+- **Sequential**: ~1.5 GFLOPS (small matrices), ~0.3 GFLOPS (large matrices due to cache misses)
 - **Parallel (4 threads)**: ~23 GFLOPS
 - **Superlinear speedup**: Observed due to improved cache utilization from tiling
 
-The parallel version achieves >37× speedup on 4 cores because:
+The parallel version achieves significant speedup on 4 cores because:
 1. Thread parallelism (4×)
-2. SIMD parallelism (8× for AVX)
+2. SIMD parallelism (8× for AVX2)
 3. Better cache efficiency from blocking
 
 ## API Usage
