@@ -3,8 +3,8 @@
  * 
  * Optimized parallel matrix multiplication using:
  * - pthread for multi-threading
- * - Cache-line aligned memory access
- * - SIMD (SSE/AVX) vectorization
+ * - Cache blocking (tiling) for better cache utilization
+ * - SIMD (AVX2) vectorization
  */
 
 #ifndef MXFP8_MATMUL_PARALLEL_HPP
@@ -55,11 +55,6 @@ inline void* matmul_worker(void* arg) {
     
     // Process assigned rows with tiling for cache optimization
     for (size_t i = args->row_start; i < args->row_end; ++i) {
-        // Initialize row of C
-        for (size_t j = 0; j < N; ++j) {
-            C[i * N + j] = 0.0f;
-        }
-        
         // Tile-based computation for cache efficiency
         for (size_t kk = 0; kk < K; kk += TILE_SIZE) {
             size_t k_end = std::min(kk + TILE_SIZE, K);
@@ -113,6 +108,11 @@ inline std::vector<float> matmul_parallel_float(const std::vector<float>& A,
                                                 const std::vector<float>& B,
                                                 size_t M, size_t K, size_t N,
                                                 size_t num_threads = 0) {
+    // Validate input matrix sizes
+    if (A.size() != M * K || B.size() != K * N) {
+        throw std::invalid_argument("Matrix dimensions don't match provided sizes");
+    }
+    
     // Auto-detect number of threads
     if (num_threads == 0) {
         num_threads = std::thread::hardware_concurrency();
@@ -175,6 +175,10 @@ inline std::vector<float> matmul_parallel_float(const std::vector<float>& A,
  */
 inline MxfpMatrix matmul_parallel(const MxfpMatrix& A, const MxfpMatrix& B,
                                   size_t num_threads = 0) {
+    if (A.cols != B.rows) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+    
     // Convert MXFP8 to float
     std::vector<float> A_float = A.to_float();
     std::vector<float> B_float = B.to_float();
@@ -195,6 +199,10 @@ inline MxfpMatrix matmul_parallel(const MxfpMatrix& A, const MxfpMatrix& B,
 inline std::vector<float> matmul_parallel_float(const MxfpMatrix& A, 
                                                 const MxfpMatrix& B,
                                                 size_t num_threads = 0) {
+    if (A.cols != B.rows) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+    
     std::vector<float> A_float = A.to_float();
     std::vector<float> B_float = B.to_float();
     

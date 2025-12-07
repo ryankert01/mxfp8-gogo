@@ -5,7 +5,7 @@
  * with a shared scaling factor per block of elements (typically 32 elements).
  * 
  * Format: 1 sign bit, 4 exponent bits, 3 mantissa bits (E4M3)
- * Block size: 32 elements share one 8-bit scale factor
+ * Block size: 32 elements share one 32-bit float scale factor
  */
 
 #ifndef MXFP8_HPP
@@ -23,7 +23,6 @@ namespace mxfp8 {
 
 // Block size for microscaling (32 elements share one scale)
 constexpr size_t BLOCK_SIZE = 32;
-constexpr size_t CACHE_LINE_SIZE = 64;
 
 /**
  * E4M3 format: 1 sign + 4 exponent + 3 mantissa

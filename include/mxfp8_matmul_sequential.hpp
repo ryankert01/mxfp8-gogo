@@ -10,6 +10,7 @@
 
 #include "mxfp8.hpp"
 #include <vector>
+#include <stdexcept>
 
 namespace mxfp8 {
 
@@ -21,6 +22,10 @@ namespace mxfp8 {
  * @return Result matrix C (M x N)
  */
 inline MxfpMatrix matmul_sequential(const MxfpMatrix& A, const MxfpMatrix& B) {
+    if (A.cols != B.rows) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+    
     size_t M = A.rows;
     size_t K = A.cols;
     size_t N = B.cols;
@@ -55,6 +60,10 @@ inline MxfpMatrix matmul_sequential(const MxfpMatrix& A, const MxfpMatrix& B) {
  * @return Result as float vector (M x N)
  */
 inline std::vector<float> matmul_sequential_float(const MxfpMatrix& A, const MxfpMatrix& B) {
+    if (A.cols != B.rows) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+    
     size_t M = A.rows;
     size_t K = A.cols;
     size_t N = B.cols;

@@ -8,7 +8,7 @@ This project implements matrix multiplication using the MXFP8 format, which is c
 
 - **MXFP8 Format**: E4M3 format (1 sign + 4 exponent + 3 mantissa bits) with microscaling (32 elements share one scale factor)
 - **Sequential Implementation**: Vanilla O(M×N×K) matrix multiplication
-- **Parallel Implementation**: Optimized with pthreads, cache blocking, and SIMD (AVX)
+- **Parallel Implementation**: Optimized with pthreads, cache blocking (tiling), and SIMD (AVX2)
 
 ## Building
 

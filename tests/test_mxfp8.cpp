@@ -17,9 +17,9 @@
 using namespace mxfp8;
 
 // Tolerance for floating point comparison (MXFP8 has limited precision)
-constexpr float TOLERANCE = 0.15f;
 constexpr float FP8_RELATIVE_ERROR_TOLERANCE = 0.3f;  // 30% relative error for FP8 conversions
 constexpr float MATMUL_RELATIVE_ERROR_TOLERANCE = 0.5f;  // 50% relative error for matmul due to quantization
+constexpr float ABSOLUTE_ERROR_TOLERANCE = 0.5f;  // Absolute error tolerance for small values
 
 /**
  * Test FP8_E4M3 conversion
@@ -78,7 +78,7 @@ void test_mxfp8_matrix() {
     for (size_t i = 0; i < data.size(); ++i) {
         float err = std::abs(recovered[i] - data[i]);
         float rel_err = err / std::max(std::abs(data[i]), 1e-6f);
-        assert(rel_err < FP8_RELATIVE_ERROR_TOLERANCE || err < MATMUL_RELATIVE_ERROR_TOLERANCE);
+        assert(rel_err < FP8_RELATIVE_ERROR_TOLERANCE || err < ABSOLUTE_ERROR_TOLERANCE);
     }
     
     std::cout << "  PASSED" << std::endl;
