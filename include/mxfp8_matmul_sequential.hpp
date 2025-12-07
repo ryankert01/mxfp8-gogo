@@ -15,8 +15,33 @@
 namespace mxfp8 {
 
 /**
- * Reference float matrix multiplication
+ * Vanilla (naive) float matrix multiplication
+ * Uses standard i,j,k loop order - simple but not cache-friendly
+ * (intentionally unoptimized as baseline for benchmarking)
+ */
+inline std::vector<float> matmul_vanilla(const std::vector<float>& A, 
+                                         const std::vector<float>& B,
+                                         size_t M, size_t K, size_t N) {
+    std::vector<float> C(M * N, 0.0f);
+    
+    // Standard i,j,k loop order (naive, not cache-optimized)
+    for (size_t i = 0; i < M; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            float sum = 0.0f;
+            for (size_t k = 0; k < K; ++k) {
+                sum += A[i * K + k] * B[k * N + j];
+            }
+            C[i * N + j] = sum;
+        }
+    }
+    
+    return C;
+}
+
+/**
+ * Optimized float matrix multiplication
  * Uses cache-friendly i,k,j loop order to avoid striding through B matrix
+ * (used as the reference for correctness verification)
  */
 inline std::vector<float> matmul_reference(const std::vector<float>& A, 
                                            const std::vector<float>& B,
@@ -34,6 +59,25 @@ inline std::vector<float> matmul_reference(const std::vector<float>& A,
     }
     
     return C;
+}
+
+/**
+ * Vanilla matrix multiplication returning float result (for benchmarking)
+ * 
+ * @param A Input matrix A (M x K)
+ * @param B Input matrix B (K x N)
+ * @return Result as float vector (M x N)
+ */
+inline std::vector<float> matmul_vanilla_float(const MxfpMatrix& A, const MxfpMatrix& B) {
+    if (A.cols != B.rows) {
+        throw std::invalid_argument("Matrix dimensions incompatible for multiplication");
+    }
+    
+    // Convert to float first
+    std::vector<float> A_float = A.to_float();
+    std::vector<float> B_float = B.to_float();
+    
+    return matmul_vanilla(A_float, B_float, A.rows, A.cols, B.cols);
 }
 
 /**

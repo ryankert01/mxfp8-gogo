@@ -81,26 +81,27 @@ Optimizations applied:
 
 Tested on 4-core system:
 
-| Matrix Size | Sequential | Parallel (4 threads) | Speedup |
-|-------------|------------|---------------------|---------|
-| 128×128     | 0.20 ms    | 0.35 ms            | 0.57× |
-| 256×256     | 1.62 ms    | 1.69 ms            | 0.96× |
-| 512×512     | 12.70 ms   | 11.75 ms           | 1.08× |
-| 1024×1024   | 88.26 ms   | 98.47 ms           | 0.90× |
+| Matrix Size | Vanilla    | Sequential (optimized) | Parallel (4t) | Vanilla→Seq | Vanilla→Parallel |
+|-------------|------------|------------------------|---------------|-------------|------------------|
+| 128×128     | 2.80 ms    | 0.19 ms                | 0.38 ms       | 14.68×      | 7.41×            |
+| 256×256     | 23.03 ms   | 1.58 ms                | 1.80 ms       | 14.54×      | 12.76×           |
+| 512×512     | 253.53 ms  | 13.46 ms               | 11.71 ms      | 18.83×      | 21.66×           |
+| 1024×1024   | 6779.29 ms | 94.17 ms               | 100.86 ms     | 71.99×      | 67.22×           |
 
 ### Performance Analysis
 
-- **Sequential**: ~20-24 GFLOPS (optimized with cache-friendly i,k,j loop order)
-- **Parallel (4 threads)**: ~20-25 GFLOPS
+- **Vanilla**: ~0.3-1.5 GFLOPS (naive i,j,k loop order, poor cache utilization)
+- **Sequential (optimized)**: ~20-22 GFLOPS (cache-friendly i,k,j loop order)
+- **Parallel (4 threads)**: ~18-24 GFLOPS (threading + SIMD + cache blocking)
 
-After optimizing the sequential version with cache-friendly loop ordering (i,k,j instead of i,j,k), both versions achieve similar performance. The sequential version benefits from:
-1. Better cache utilization from sequential memory access
-2. No thread synchronization overhead
+The key optimization is the loop order change from i,j,k to i,k,j which dramatically improves cache utilization:
+- **Vanilla→Sequential**: Up to 72× speedup just from loop reordering
+- **Vanilla→Parallel**: Similar speedup as the optimized sequential version
 
-The parallel version still benefits from:
-1. Thread parallelism (4×)
-2. SIMD parallelism (8× for AVX2)
-3. Cache blocking (tiling)
+The parallel version uses:
+1. pthread threading (row distribution)
+2. AVX2 SIMD (8-wide float operations)
+3. 32×32 cache blocking (tiling)
 
 ## API Usage
 

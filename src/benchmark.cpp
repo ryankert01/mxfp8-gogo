@@ -1,7 +1,7 @@
 /**
  * MXFP8 Matrix Multiplication Benchmark
  * 
- * Compares performance of sequential vs parallel implementations
+ * Compares performance of vanilla, sequential (optimized), and parallel implementations
  */
 
 #include "../include/mxfp8.hpp"
@@ -47,10 +47,21 @@ void benchmark_size(size_t M, size_t K, size_t N, int iterations = 5) {
     MxfpMatrix B = MxfpMatrix::from_float(B_data, K, N);
     
     // Warmup
+    matmul_vanilla_float(A, B);
     matmul_sequential_float(A, B);
     matmul_parallel_float(A, B);
     
-    // Benchmark sequential
+    // Benchmark vanilla (naive i,j,k loop order)
+    double vanilla_total = 0;
+    for (int i = 0; i < iterations; ++i) {
+        vanilla_total += time_function([&]() {
+            volatile auto result = matmul_vanilla_float(A, B);
+            (void)result;
+        });
+    }
+    double vanilla_avg = vanilla_total / iterations;
+    
+    // Benchmark sequential (optimized i,k,j loop order)
     double seq_total = 0;
     for (int i = 0; i < iterations; ++i) {
         seq_total += time_function([&]() {
@@ -77,11 +88,15 @@ void benchmark_size(size_t M, size_t K, size_t N, int iterations = 5) {
     double gflops = (2.0 * M * N * K) / 1e9;
     
     std::cout << std::fixed << std::setprecision(2);
+    std::cout << "  Vanilla:        " << vanilla_avg << " ms  (" 
+              << (gflops / (vanilla_avg / 1000.0)) << " GFLOPS)" << std::endl;
     std::cout << "  Sequential:     " << seq_avg << " ms  (" 
               << (gflops / (seq_avg / 1000.0)) << " GFLOPS)" << std::endl;
     std::cout << "  Parallel (" << num_threads << "t): " << par_avg << " ms  (" 
               << (gflops / (par_avg / 1000.0)) << " GFLOPS)" << std::endl;
-    std::cout << "  Speedup:        " << (seq_avg / par_avg) << "x" << std::endl;
+    std::cout << "  Speedup (vanilla→seq):      " << (vanilla_avg / seq_avg) << "x" << std::endl;
+    std::cout << "  Speedup (vanilla→parallel): " << (vanilla_avg / par_avg) << "x" << std::endl;
+    std::cout << "  Speedup (seq→parallel):     " << (seq_avg / par_avg) << "x" << std::endl;
 }
 
 int main() {
